@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Find a Pair</title>
 <style>
 /* SAP 72 typeface, embedded */
@@ -37,6 +37,10 @@ body{
   font-size:17px; line-height:1.45; min-height:100%;
 }
 button,input{font:inherit;color:inherit}
+html{touch-action:manipulation;-ms-touch-action:manipulation;-webkit-text-size-adjust:100%}
+button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.board,.stats,.kb,.adminBtn{-webkit-user-select:none;-ms-user-select:none;user-select:none;-webkit-touch-callout:none}
+.face img{pointer-events:none;-webkit-user-drag:none;-webkit-touch-callout:none}
 :focus-visible{outline:3px solid var(--focus);outline-offset:3px}
 
 .wrap{max-width:720px;margin:0 auto;padding:24px 20px 40px;display:grid;gap:22px;justify-items:center}
@@ -60,9 +64,9 @@ h1{margin:0;font-weight:800;font-size:clamp(2.2rem,5vw,3.6rem);line-height:.95;l
 /* board */
 .board{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(8px,1.6vw,14px);width:100%}
 .card{position:relative;aspect-ratio:1;border:0;padding:0;background:none;cursor:pointer;perspective:900px;border-radius:16px}
-.card .inner{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .45s cubic-bezier(.3,.7,.2,1)}
+.card .inner{position:absolute;top:0;right:0;bottom:0;left:0;transform-style:preserve-3d;transition:transform .45s cubic-bezier(.3,.7,.2,1)}
 .card.up .inner,.card.done .inner{transform:rotateY(180deg)}
-.face{position:absolute;inset:0;border-radius:16px;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden;display:grid;place-items:center}
+.face{position:absolute;top:0;right:0;bottom:0;left:0;border-radius:16px;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden;display:grid;place-items:center}
 .back{
   background:
     repeating-linear-gradient(45deg, transparent 0 9px, rgba(255,255,255,.09) 9px 18px),
@@ -75,7 +79,8 @@ h1{margin:0;font-weight:800;font-size:clamp(2.2rem,5vw,3.6rem);line-height:.95;l
 .ph{font-weight:800;font-size:clamp(1.6rem,5vw,3rem);line-height:1;width:62%;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;color:#fff}
 .card.done .front{border-color:var(--match);box-shadow:0 0 0 3px var(--match)}
 .card.done{cursor:default}
-.card:hover:not(.up):not(.done) .inner{transform:translateY(-3px)}
+@supports not (aspect-ratio:1){.card{height:0;padding-bottom:100%}}
+@media (hover:hover) and (pointer:fine){.card:hover:not(.up):not(.done) .inner{transform:translateY(-3px)}}
 
 /* leaderboard (inside the finish dialog) */
 .lbBox{border-top:1px solid var(--line);padding-top:14px;margin-top:4px}
@@ -105,11 +110,11 @@ ol.lb li:nth-child(1) .rk{color:var(--ink)}
 ol.lb .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 ol.lb .sc{font-variant-numeric:tabular-nums;color:var(--muted);font-size:.92rem;text-align:right}
 ol.lb .sc b{color:var(--ink)}
-ol.lb li.me{background:color-mix(in srgb,var(--match) 22%,transparent);border-radius:10px;padding-inline:8px;margin-inline:-8px}
+ol.lb li.me{background:rgba(255,201,60,.22);border-radius:10px;padding-inline:8px;margin-inline:-8px}
 .empty{color:var(--muted);padding:10px 0}
 
 /* dialogs */
-.overlay{position:fixed;inset:0;background:rgba(10,15,30,.55);display:none;place-items:center;padding:20px;z-index:20}
+.overlay{position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(10,15,30,.55);display:none;place-items:center;padding:20px;z-index:20}
 .overlay.open{display:grid}
 .dlg{background:var(--surface);color:var(--ink);border-radius:22px;padding:28px;width:min(460px,100%);max-height:calc(100vh - 40px);overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 .dlg.wide{width:min(760px,100%)}
@@ -164,7 +169,7 @@ ol.lb .nm{text-transform:uppercase;letter-spacing:.03em}
   <form class="dlg" id="nameForm" novalidate>
     <h2 id="nameTitle">Who’s playing?</h2>
     <p>Match all 8 pairs with as few flips as you can. The clock starts on your first flip.</p>
-    <label for="nameInput">Username</label>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px"><label for="nameInput" style="margin:0">Username</label><button type="button" class="btn ghost" id="kbToggle" style="padding:6px 14px;font-size:.85rem">&#9000; Keyboard</button></div>
     <input id="nameInput" maxlength="16" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Your name">
     <div class="err" id="nameErr"></div>
     <div class="row"><button class="btn" type="submit" style="flex:1;min-height:56px;font-size:1.15rem">Start game</button></div>
@@ -331,8 +336,8 @@ function calcPoints(f, ms){
 let db = null, scores = [], usingShared = false;
 const LOCAL_KEY = "findapair:scores";
 
-function readLocal(){ try { return (JSON.parse(localStorage.getItem(LOCAL_KEY)) || []).filter(s => typeof s.points === "number"); } catch { return []; } }
-function writeLocal(list){ try { localStorage.setItem(LOCAL_KEY, JSON.stringify(list)); } catch {} }
+function readLocal(){ try { return (JSON.parse(localStorage.getItem(LOCAL_KEY)) || []).filter(s => typeof s.points === "number"); } catch (_e) { return []; } }
+function writeLocal(list){ try { localStorage.setItem(LOCAL_KEY, JSON.stringify(list)); } catch (_e) {} }
 
 async function saveScore(entry){
   if (db && usingShared) {
@@ -344,7 +349,7 @@ async function saveScore(entry){
   }
   const list = readLocal();
   const id = "l" + entry.at + Math.random().toString(36).slice(2,6);
-  list.push({ ...entry, id });
+  list.push(Object.assign({}, entry, { id: id }));
   list.sort((a,b) => b.points - a.points || a.at - b.at);
   writeLocal(list.slice(0, 200));
   scores = list.slice(0, 10);
@@ -356,7 +361,7 @@ async function rankOf(entry){
     try {
       const snap = await db.collection("scores").where("points", ">", entry.points).get();
       return snap.size + 1;
-    } catch { return null; }
+    } catch (_e) { return null; }
   }
   return readLocal().filter(s => s.points > entry.points).length + 1;
 }
@@ -388,14 +393,14 @@ function renderLeaderboard(){
 async function initStorage(){
   scores = readLocal().slice(0, 10); setNote(); renderLeaderboard();
   if (!window.claude || !window.claude.use) return;
-  try { db = await window.claude.use("db"); } catch { db = null; }
+  try { db = await window.claude.use("db"); } catch (_e) { db = null; }
   if (!db) return;
   usingShared = true; setNote();
   let loaded = false;
   const t = setTimeout(() => { if (!loaded) $("lbNote").textContent = "Can’t reach the shared leaderboard yet. Scores still count."; }, 10000);
   db.collection("scores").orderBy("points", "desc").limit(10).onSnapshot(snap => {
     if (!snap.metadata.fromCache) { loaded = true; clearTimeout(t); setNote(); }
-    scores = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => typeof s.points === "number");
+    scores = snap.docs.map(d => Object.assign({ id: d.id }, d.data())).filter(s => typeof s.points === "number");
     renderLeaderboard();
   }, () => { clearTimeout(t); usingShared = false; scores = readLocal().slice(0,10); setNote(); renderLeaderboard(); });
 }
@@ -408,7 +413,11 @@ function closeDlg(id){ $(id).classList.remove("open"); syncAdminBtn(); }
 
 /* touch detection: show the keyboard panel only on touch screens */
 const touchMQ = window.matchMedia("(pointer: coarse), (hover: none)");
-let isTouch = touchMQ.matches;
+function kbPref(){ try { return localStorage.getItem("findapair:kb"); } catch (_e) { return null; } }
+const urlKb = (location.search.match(/[?&](?:keyboard|kiosk|touch)=([01])/) || [])[1];
+let isTouch = urlKb ? urlKb === "1"
+  : kbPref() ? kbPref() === "1"
+  : touchMQ.matches || (navigator.maxTouchPoints > 0 && !window.matchMedia("(hover: hover) and (pointer: fine)").matches);
 /* the keyboard types into one field at a time: the name field, or the admin password field */
 const KB_TARGETS = {
   name:  { input: () => $("nameInput"), form: () => $("nameForm"),  dlg: "nameDlg",  go: "Start", err: "nameErr",  max: 16, space: true },
@@ -438,8 +447,16 @@ window.addEventListener("resize", placeAdminBtn);
 /* a finger tap on either field also turns the panel on (touch laptops, kiosks that misreport) */
 [["nameInput","name"],["adminPw","admin"]].forEach(([id, which]) => {
   $(id).addEventListener("pointerdown", e => {
-    if (e.pointerType === "touch" && !isTouch) { isTouch = true; showKb(which); }
+    if ((e.pointerType === "touch" || e.pointerType === "pen") && !isTouch) { isTouch = true; showKb(which); }
   });
+  $(id).addEventListener("touchstart", () => { if (!isTouch) { isTouch = true; showKb(which); } }, { passive: true });
+});
+/* manual switch on the name screen, for touch screens that report themselves as a mouse */
+$("kbToggle").addEventListener("click", () => {
+  isTouch = !$("kbPanel").classList.contains("open");
+  try { localStorage.setItem("findapair:kb", isTouch ? "1" : "0"); } catch (_e) {}
+  if (isTouch) showKb("name");
+  else { hideKb(); $("nameInput").removeAttribute("inputmode"); $("nameInput").focus(); }
 });
 
 /* names are always uppercase English letters, digits, space, - and _ (accents become plain letters: Ü -> U) */
@@ -448,7 +465,7 @@ function cleanName(v){
 }
 $("nameInput").addEventListener("input", e => {
   const el = e.target, up = cleanName(el.value);
-  if (up !== el.value) { const p = el.selectionStart; el.value = up; try { el.setSelectionRange(p, p); } catch {} }
+  if (up !== el.value) { const p = el.selectionStart; el.value = up; try { el.setSelectionRange(p, p); } catch (_e) {} }
 });
 
 function askName(){
@@ -464,10 +481,14 @@ $("nameForm").addEventListener("submit", e => {
   player = v.slice(0, 16);
   $("playerName").textContent = player; $("playerLine").hidden = false;
   closeDlg("nameDlg"); hideKb(); lastScoreId = null; buildBoard(); renderLeaderboard();
-  boardEl.querySelector(".card")?.focus();
+  var c0 = boardEl.querySelector(".card"); if (c0 && !isTouch) c0.focus();
 });
 $("changeName").addEventListener("click", askName);
 $("restart").addEventListener("click", buildBoard);
+function submitForm(f){
+  if (f.requestSubmit) f.requestSubmit();
+  else f.dispatchEvent(new Event("submit", { cancelable: true }));
+}
 /* ---------- on-screen keyboard ---------- */
 (function buildKeyboard(){
   const kb = $("kb");
@@ -475,7 +496,7 @@ $("restart").addEventListener("click", buildBoard);
   const make = (label, cls, onPress) => {
     const b = document.createElement("button");
     b.type = "button"; b.textContent = label; if (cls) b.className = cls;
-    b.addEventListener("pointerdown", e => e.preventDefault());
+    b.addEventListener("mousedown", e => e.preventDefault());
     b.addEventListener("click", onPress);
     return b;
   };
@@ -492,7 +513,7 @@ $("restart").addEventListener("click", buildBoard);
   });
   const last = document.createElement("div"); last.className = "r";
   const spaceKey = make("Space", "space", () => { const v = kbTarget.input().value; if (kbTarget.space && v && !v.endsWith(" ")) type(" "); });
-  const goKey = make("Start", "wide go", () => kbTarget.form().requestSubmit());
+  const goKey = make("Start", "wide go", () => submitForm(kbTarget.form()));
   last.append(make("-", "", () => type("-")), spaceKey, make("_", "", () => type("_")), goKey);
   kb.appendChild(last);
   window.updateKeyboard = () => { goKey.textContent = kbTarget.go; spaceKey.disabled = !kbTarget.space; };
