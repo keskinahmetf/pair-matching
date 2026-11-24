@@ -644,10 +644,9 @@ function submitForm(f){
   });
   const last = document.createElement("div"); last.className = "r";
   const spaceKey = make("Space", "space", () => { const v = kbTarget.input().value; if (kbTarget.space && v && !v.endsWith(" ")) type(" "); });
-  const goKey = make("Start", "wide go", () => submitForm(kbTarget.form()));
-  last.append(make("-", "", () => type("-")), spaceKey, make("_", "", () => type("_")), goKey);
+  last.append(make("-", "", () => type("-")), spaceKey, make("_", "", () => type("_")));
   kb.appendChild(last);
-  window.updateKeyboard = () => { goKey.textContent = kbTarget.go; spaceKey.disabled = !kbTarget.space; };
+  window.updateKeyboard = () => { spaceKey.disabled = !kbTarget.space; };
   window.resetKeyboard = () => {};
 })();
 
