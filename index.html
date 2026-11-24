@@ -93,25 +93,27 @@ main #restart{align-self:center;font-size:calc(var(--board,640px)*.026);padding:
 .lbBox h3{margin:0 0 2px;font-size:1.3rem;font-weight:800;letter-spacing:-.01em}
 .lbBox .note{margin:0 0 8px;color:var(--muted);font-size:.85rem}
 
-/* on-screen keyboard: separate panel docked to the bottom, touch screens only */
-.kbPanel{position:fixed;left:50%;bottom:2.5vh;z-index:55;display:none;
-  width:96vw;max-width:calc(1100px * var(--t,1));-webkit-transform:translateX(-50%);transform:translateX(-50%);
-  background:var(--surface);border:1px solid var(--line);border-radius:28px;
-  box-shadow:0 24px 70px rgba(0,0,0,.38),0 4px 14px rgba(0,0,0,.15);
-  padding:1.1rem}
-.kbPanel.open{display:block;-webkit-animation:kbIn .2s ease-out;animation:kbIn .2s ease-out}
-@-webkit-keyframes kbIn{from{opacity:0;-webkit-transform:translate(-50%,18px)}to{opacity:1;-webkit-transform:translate(-50%,0)}}
-@keyframes kbIn{from{opacity:0;transform:translate(-50%,18px)}to{opacity:1;transform:translate(-50%,0)}}
-@media (prefers-reduced-motion:reduce){.kbPanel.open{-webkit-animation:none;animation:none}}
-.overlay.withkb{place-items:start center;align-items:start;padding-top:2.5vh}
-.kb{margin:0 auto;display:grid;gap:.55rem;user-select:none;-webkit-user-select:none;touch-action:manipulation}
-.kb .r{display:flex;gap:.55rem;justify-content:center}
-.kb button{flex:0 1 9.4%;min-width:0;min-height:4rem;border-radius:14px;border:1px solid var(--line);background:var(--bg);font-size:1.6rem;font-weight:600;cursor:pointer;padding:0;box-shadow:0 2px 0 var(--line)}
-.kb button:active{background:var(--line)}
-.kb button.wide{flex:0 1 15%;font-size:1.25rem}
-.kb button.go{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.kb button.space{flex:1 1 auto}
-.kb button.on{background:var(--ink);color:var(--bg)}
+/* on-screen keyboard: part of the name panel (or the password panel), touch screens only */
+.kbPanel{display:none;margin-top:1.1rem}
+.kbPanel.open{display:block}
+.kb{margin:0 auto;display:grid;gap:.5rem;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.kb .r{display:flex;gap:.5rem;justify-content:center}
+.kb button{flex:0 1 9.4%;min-width:0;min-height:2.9rem;border-radius:11px;border:1.5px solid var(--line);background:var(--bg);font-size:1.25rem;font-weight:600;cursor:pointer;padding:0;box-shadow:0 3px 0 var(--line)}
+.kb button:active{background:var(--line);box-shadow:none;transform:translateY(2px)}
+.kb button.wide{flex:0 1 19.3%;font-size:1.1rem}
+.kb button.space{flex:0 1 52%;font-size:1.05rem}
+.kb button:disabled{opacity:.4}
+/* the panel grows wider while the keyboard is in it */
+.dlg.haskb{width:44rem;max-width:100%}
+/* leaderboard from the start screen: same width as the keyboard panel, larger rows */
+#lbDlg .dlg{width:44rem;max-width:100%}
+#lbDlg h2{font-size:2.4rem;margin-bottom:.8rem}
+#lbDlg ol.lb li{grid-template-columns:2.4rem 1fr auto;padding:.85rem 0;font-size:1.3rem}
+#lbDlg ol.lb li.me{padding-inline:.6rem;margin-inline:-.6rem}
+#lbDlg ol.lb .sc{font-size:1.1rem}
+#lbDlg .empty{font-size:1.2rem}
+.nameCol{width:100%;max-width:23.25rem;margin:0 auto}
+.dlg.haskb .kbPanel{border-top:1px solid var(--line);padding-top:1.1rem}
 ol.lb{list-style:none;margin:0;padding:0}
 ol.lb li{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:baseline;padding:9px 0;border-top:1px solid var(--line)}
 ol.lb li:first-child{border-top:0}
@@ -136,6 +138,7 @@ ol.lb li.me{background:rgba(255,201,60,.22);border-radius:10px;padding-inline:8p
 .dlg .err{color:#C0362C;font-size:.9rem;min-height:1.3em;margin-top:6px}
 .dlg .ok{color:#12804F}
 #nameInput{text-transform:uppercase;letter-spacing:.04em}
+
 ol.lb .nm{text-transform:uppercase;letter-spacing:.03em}
 
 /* admin: refresh leaderboard */
@@ -185,13 +188,16 @@ ol.lb .nm{text-transform:uppercase;letter-spacing:.03em}
 <!-- name dialog -->
 <div class="overlay" id="nameDlg" role="dialog" aria-modal="true" aria-labelledby="nameTitle">
   <form class="dlg" id="nameForm" novalidate>
-    <h2 id="nameTitle">Who’s playing?</h2>
-    <p>Match all 8 pairs with as few flips as you can. You have 3 minutes.</p>
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px"><label for="nameInput" style="margin:0">Username</label><button type="button" class="btn ghost" id="kbToggle" style="padding:6px 14px;font-size:.85rem">&#9000; Keyboard</button></div>
-    <input id="nameInput" maxlength="16" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Your name">
-    <div class="err" id="nameErr"></div>
-    <div class="row"><button class="btn" type="submit" style="flex:1;min-height:56px;font-size:1.15rem">Start game</button></div>
-    <button type="button" class="linkBtn" id="showLb">View leaderboard</button>
+    <div class="nameCol">
+      <h2 id="nameTitle">Who’s playing?</h2>
+      <p>Match all 8 pairs with as few flips as you can. You have 3 minutes.</p>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px"><label for="nameInput" style="margin:0">Username</label><button type="button" class="btn ghost" id="kbToggle" style="padding:6px 14px;font-size:.85rem">&#9000; Keyboard</button></div>
+      <input id="nameInput" maxlength="16" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Your name">
+      <div class="err" id="nameErr"></div>
+      <div class="row"><button class="btn" type="submit" id="startBtn" style="flex:1;min-height:56px;font-size:1.15rem" disabled>Start game</button></div>
+      <button type="button" class="linkBtn" id="showLb">View leaderboard</button>
+    </div>
+    <div id="kbSlotName"></div>
   </form>
 </div>
 
@@ -226,6 +232,7 @@ ol.lb .nm{text-transform:uppercase;letter-spacing:.03em}
 </button>
 <div class="overlay" id="adminDlg" role="dialog" aria-modal="true" aria-labelledby="adminTitle">
   <form class="dlg" id="adminForm" novalidate>
+    <div class="nameCol">
     <h2 id="adminTitle">Refresh leaderboard</h2>
     <p>This deletes every score on the leaderboard. Enter the password to continue.</p>
     <label for="adminPw">Password</label>
@@ -235,6 +242,8 @@ ol.lb .nm{text-transform:uppercase;letter-spacing:.03em}
       <button class="btn ghost" type="button" id="adminCancel" style="flex:1;min-height:52px">Cancel</button>
       <button class="btn" type="submit" id="adminGo" style="flex:1;min-height:52px">Refresh</button>
     </div>
+    </div>
+    <div id="kbSlotAdmin"></div>
   </form>
 </div>
 
@@ -487,7 +496,7 @@ function renderInto(ol){
   }
   scores.forEach((s, i) => {
     const li = document.createElement("li");
-    if (s.id && s.id === lastScoreId) li.className = "me";
+    if (ol.id === "lb" && s.id && s.id === lastScoreId) li.className = "me";
     const rk = document.createElement("span"); rk.className = "rk"; rk.textContent = i + 1;
     const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = String(s.name || "Player").toUpperCase();
     const sc = document.createElement("span"); sc.className = "sc";
@@ -527,29 +536,27 @@ let isTouch = urlKb ? urlKb === "1"
   : touchMQ.matches || (navigator.maxTouchPoints > 0 && !window.matchMedia("(hover: hover) and (pointer: fine)").matches);
 /* the keyboard types into one field at a time: the name field, or the admin password field */
 const KB_TARGETS = {
-  name:  { input: () => $("nameInput"), form: () => $("nameForm"),  dlg: "nameDlg",  go: "Start", err: "nameErr",  max: 16, space: true },
-  admin: { input: () => $("adminPw"),   form: () => $("adminForm"), dlg: "adminDlg", go: "OK",    err: "adminErr", max: 32, space: false },
+  name:  { slot: "kbSlotName", input: () => $("nameInput"), form: () => $("nameForm"),  dlg: "nameDlg",  go: "Start", err: "nameErr",  max: 16, space: true },
+  admin: { slot: "kbSlotAdmin", input: () => $("adminPw"),   form: () => $("adminForm"), dlg: "adminDlg", go: "OK",    err: "adminErr", max: 32, space: false },
 };
 let kbTarget = KB_TARGETS.name;
 function showKb(which){
   kbTarget = KB_TARGETS[which || "name"];
   if (!isTouch) return;
-  Object.values(KB_TARGETS).forEach(t => { t.input().setAttribute("inputmode", "none"); $(t.dlg).classList.remove("withkb"); });
+  Object.values(KB_TARGETS).forEach(t => { t.input().setAttribute("inputmode", "none"); t.form().classList.remove("haskb"); });
   window.updateKeyboard && window.updateKeyboard();
+  $(kbTarget.slot).appendChild($("kbPanel"));
   $("kbPanel").classList.add("open");
-  $(kbTarget.dlg).classList.add("withkb");
+  kbTarget.form().classList.add("haskb");
   placeAdminBtn();
 }
 function hideKb(){
   $("kbPanel").classList.remove("open");
-  Object.values(KB_TARGETS).forEach(t => $(t.dlg).classList.remove("withkb"));
+  Object.values(KB_TARGETS).forEach(t => t.form().classList.remove("haskb"));
   placeAdminBtn();
 }
 /* keep the refresh button above the keyboard panel when it is open */
-function placeAdminBtn(){
-  const p = $("kbPanel");
-  $("adminBtn").style.bottom = p.classList.contains("open") ? (window.innerHeight - p.getBoundingClientRect().top + 12) + "px" : "";
-}
+function placeAdminBtn(){ $("adminBtn").style.bottom = ""; }
 window.addEventListener("resize", placeAdminBtn);
 /* a finger tap on either field also turns the panel on (touch laptops, kiosks that misreport) */
 [["nameInput","name"],["adminPw","admin"]].forEach(([id, which]) => {
@@ -570,13 +577,15 @@ $("kbToggle").addEventListener("click", () => {
 function cleanName(v){
   return v.toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Z0-9 _-]/g, "");
 }
+function syncStart(){ $("startBtn").disabled = !cleanName($("nameInput").value).trim(); }
+$("nameInput").addEventListener("input", syncStart);
 $("nameInput").addEventListener("input", e => {
   const el = e.target, up = cleanName(el.value);
   if (up !== el.value) { const p = el.selectionStart; el.value = up; try { el.setSelectionRange(p, p); } catch (_e) {} }
 });
 
 function askName(){
-  $("nameInput").value = ""; $("nameErr").textContent = "";
+  $("nameInput").value = ""; $("nameErr").textContent = ""; syncStart();
   window.resetKeyboard && window.resetKeyboard();
   showKb();
   openDlg("nameDlg");
@@ -596,7 +605,7 @@ $("nameForm").addEventListener("submit", async e => {
 });
 $("warnRename").addEventListener("click", () => {
   closeDlg("warnDlg");
-  const i = $("nameInput"); i.value = pendingName;
+  const i = $("nameInput"); i.value = pendingName; syncStart();
   showKb("name"); i.focus();
   try { i.setSelectionRange(i.value.length, i.value.length); } catch (_e) {}
 });
@@ -623,7 +632,7 @@ function submitForm(f){
 /* ---------- on-screen keyboard ---------- */
 (function buildKeyboard(){
   const kb = $("kb");
-  const rows = ["1234567890", "QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
+  const rows = ["1234567890", "QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM-"];
   const make = (label, cls, onPress) => {
     const b = document.createElement("button");
     b.type = "button"; b.textContent = label; if (cls) b.className = cls;
@@ -634,17 +643,17 @@ function submitForm(f){
   const type = ch => {
     const input = kbTarget.input();
     if (input.value.length >= kbTarget.max) return;
-    input.value += ch; $(kbTarget.err).textContent = "";
+    input.value += ch; $(kbTarget.err).textContent = ""; syncStart();
   };
   rows.forEach((keys, ri) => {
     const r = document.createElement("div"); r.className = "r";
     [...keys].forEach(k => r.appendChild(make(k, "", () => type(k))));
-    if (ri === 3) r.appendChild(make("⌫", "wide", () => { const i = kbTarget.input(); i.value = i.value.slice(0, -1); }));
+    if (ri === 3) r.appendChild(make("⌫", "wide", () => { const i = kbTarget.input(); i.value = i.value.slice(0, -1); syncStart(); }));
     kb.appendChild(r);
   });
   const last = document.createElement("div"); last.className = "r";
   const spaceKey = make("Space", "space", () => { const v = kbTarget.input().value; if (kbTarget.space && v && !v.endsWith(" ")) type(" "); });
-  last.append(make("-", "", () => type("-")), spaceKey, make("_", "", () => type("_")));
+  last.append(spaceKey);
   kb.appendChild(last);
   window.updateKeyboard = () => { spaceKey.disabled = !kbTarget.space; };
   window.resetKeyboard = () => {};
