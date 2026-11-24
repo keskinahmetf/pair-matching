@@ -149,6 +149,11 @@ ol.lb .nm{text-transform:uppercase;letter-spacing:.03em}
 .lbBox .note:empty{display:none}
 .linkBtn{display:block;margin:.9rem auto 0;background:none;border:0;padding:.4rem .8rem;color:var(--ink);font-weight:600;font-size:1rem;text-decoration:underline;text-underline-offset:4px;cursor:pointer}
 #warnTitle{font-size:1.6rem;margin-bottom:.4rem}
+#warnDlg .dlg{width:24.5rem}
+#time.low{color:#D93025}
+#timeDlg{z-index:50}
+#timeDlg .dlg{width:24.5rem;text-align:center}
+#timeDlg h2{font-size:2.6rem;margin:0}
 .result{display:flex;gap:10px;margin:6px 0 16px}
 .result .stat{flex:1}
 .rank{font-size:1.05rem;margin-bottom:4px;color:var(--ink)}
@@ -168,7 +173,7 @@ ol.lb .nm{text-transform:uppercase;letter-spacing:.03em}
   <main>
     <div class="stats">
       <div class="stat"><span>Flips</span><b id="flips">0</b></div>
-      <div class="stat"><span>Time</span><b id="time">0:00</b></div>
+      <div class="stat"><span>Time left</span><b id="time">3:00</b></div>
       <div class="spacer"></div>
       <button class="btn ghost" id="restart">Restart</button>
     </div>
@@ -181,7 +186,7 @@ ol.lb .nm{text-transform:uppercase;letter-spacing:.03em}
 <div class="overlay" id="nameDlg" role="dialog" aria-modal="true" aria-labelledby="nameTitle">
   <form class="dlg" id="nameForm" novalidate>
     <h2 id="nameTitle">Who’s playing?</h2>
-    <p>Match all 8 pairs with as few flips as you can. The clock starts on your first flip.</p>
+    <p>Match all 8 pairs with as few flips as you can. You have 3 minutes.</p>
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px"><label for="nameInput" style="margin:0">Username</label><button type="button" class="btn ghost" id="kbToggle" style="padding:6px 14px;font-size:.85rem">&#9000; Keyboard</button></div>
     <input id="nameInput" maxlength="16" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Your name">
     <div class="err" id="nameErr"></div>
@@ -197,6 +202,11 @@ ol.lb .nm{text-transform:uppercase;letter-spacing:.03em}
     <ol class="lb" id="lb2"></ol>
     <div class="row"><button class="btn" type="button" id="lbClose" style="flex:1;min-height:56px;font-size:1.15rem">Close</button></div>
   </div>
+</div>
+
+<!-- time is up: shown briefly, then back to the start screen -->
+<div class="overlay" id="timeDlg" role="alertdialog" aria-modal="true" aria-labelledby="timeTitle">
+  <div class="dlg"><h2 id="timeTitle">Time’s up!</h2></div>
 </div>
 
 <!-- name already on the leaderboard -->
@@ -291,7 +301,7 @@ function buildBoard(){
   clearInterval(timerId); timerId = null;
   flips = 0; matched = 0; elapsed = 0; startTs = 0; first = second = null; lock = false;
   clearTimeout(mismatchTimer); mismatch = null;
-  $("flips").textContent = "0"; $("time").textContent = "0:00";
+  $("flips").textContent = "0"; $("time").textContent = fmtDown(TIME_LIMIT); $("time").classList.remove("low");
   deck = shuffle([...IMAGES.keys(), ...IMAGES.keys()]);
   boardEl.textContent = "";
   deck.forEach((pairId, i) => {
@@ -315,10 +325,34 @@ function buildBoard(){
   });
 }
 
+/* ---------- 3-minute countdown: starts when the game starts, restarts the game at 0 ---------- */
+let TIME_LIMIT = 3 * 60 * 1000;
+function fmtDown(ms){ const s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
 function startTimer(){
+  clearInterval(timerId);
   startTs = performance.now();
-  timerId = setInterval(() => { $("time").textContent = fmt(performance.now() - startTs); }, 250);
+  timerId = setInterval(() => {
+    const left = TIME_LIMIT - (performance.now() - startTs);
+    $("time").textContent = fmtDown(left);
+    $("time").classList.toggle("low", left <= 30000);
+    if (left <= 0) timeUp();
+  }, 250);
 }
+let timeUpTimer = null;
+function timeUp(){
+  clearInterval(timerId); timerId = null;
+  hideMismatch();
+  player = "";            /* blocks further taps */
+  openDlg("timeDlg");
+  timeUpTimer = setTimeout(backToStart, 3000);
+}
+function backToStart(){
+  clearTimeout(timeUpTimer);
+  if (!$("timeDlg").classList.contains("open")) return;
+  closeDlg("timeDlg");
+  $("playerLine").hidden = true; buildBoard(); askName();
+}
+$("timeDlg").addEventListener("click", backToStart);
 
 /* the last wrong pair: shown until the next tap or for 1 second, whichever comes first */
 let mismatch = null, mismatchTimer = null;
@@ -332,7 +366,6 @@ function flip(card){
   if (!player || card.classList.contains("done")) return;
   hideMismatch();
   if (card.classList.contains("up")) return;
-  if (!timerId && matched === 0 && flips === 0) startTimer();
   card.classList.add("up");
   card.setAttribute("aria-label", IMAGES[card.dataset.pair].alt);
   flips++; $("flips").textContent = flips;
@@ -354,7 +387,7 @@ function flip(card){
 async function finish(){
   elapsed = Math.round(performance.now() - startTs);
   clearInterval(timerId); timerId = null;
-  $("time").textContent = fmt(elapsed);
+  $("time").textContent = fmtDown(TIME_LIMIT - elapsed);
   $("winFlips").textContent = flips;
   $("winTime").textContent = fmtPrecise(elapsed);
   $("winRank").textContent = "Saving your score…";
@@ -578,10 +611,11 @@ $("lbDlg").addEventListener("keydown", e => { if (e.key === "Escape") closeLb();
 function startAs(name){
   player = name;
   $("playerName").textContent = player; $("playerLine").hidden = false;
-  closeDlg("nameDlg"); hideKb(); lastScoreId = null; buildBoard(); renderLeaderboard();
+  closeDlg("nameDlg"); hideKb(); lastScoreId = null; buildBoard(); renderLeaderboard(); startTimer();
   var c0 = boardEl.querySelector(".card"); if (c0 && !isTouch) c0.focus();
 }
-$("restart").addEventListener("click", buildBoard);
+/* Restart: back to the start screen for a fresh name */
+$("restart").addEventListener("click", () => { closeDlg("winDlg"); player = ""; $("playerLine").hidden = true; buildBoard(); askName(); });
 function submitForm(f){
   if (f.requestSubmit) f.requestSubmit();
   else f.dispatchEvent(new Event("submit", { cancelable: true }));
